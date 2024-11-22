@@ -15,10 +15,16 @@ typedef struct {
 	int nivel;  	// Nivel do personagem
 } Personagem;
 
-// Funcoes
-void criarPersonagem(Personagem *p);
-void exibirPersonagem(const Personagem *p);
 
+int menuInicial() {
+	int escolha;
+	printf("\n=== Menu Inicial ===\n");
+	printf("1. Jogar\n");
+	printf("2. Sair\n");
+	printf("Escolha uma opcao: ");
+	scanf("%d", &escolha);
+	return escolha;
+}
 
 // Menu do personagem
 int menuPersonagem() {
@@ -162,8 +168,183 @@ void salvarProgresso(Personagem *p) {
 	printf("Experiencia: %d\n", p->xp);
 }
 
+void batalha(Personagem *p1, Personagem *p2) {
+	printf("\n=== Detalhes dos Personagens na Batalha ===\n");
+	printf("\n--- Detalhes de %s ---\n", p1->nome);
+	exibirPersonagem(p1);
+	printf("\n--- Detalhes de %s ---\n", p2->nome);
+	exibirPersonagem(p2);
+
+	printf("\n%s (Ataque: %d) VS %s (Ataque: %d)\n", p1->nome, p1->ataque, p2->nome, p2->ataque);
+
+	int contadorAtaquesP1 = 0; // Contador de ataques do jogador
+	int contadorAtaquesP2 = 0; // Contador de ataques do oponente
+
+	// Simulação de turnos com controle do jogador
+	while (p1->vitalidade > 0 && p2->vitalidade > 0) {
+    	int acao;
+    	int dano1 = 0, dano2 = 0;
+    	bool defendendo = false;
+
+    	// Ação do jogador
+    	printf("\n%s, escolha sua acao:\n", p1->nome);
+    	printf("1. Atacar\n");
+    	printf("2. Defender\n");
+    	printf("3. Exibir detalhes do personagem\n");
+    	printf("Escolha (1-3): ");
+    	scanf("%d", &acao);
+
+    	switch (acao) {
+        	case 1:
+            	contadorAtaquesP1++;
+            	if (contadorAtaquesP1 == 2) {
+                	dano1 = (p1->ataque * 2) - p2->defesa; // Ataque especial
+                	printf("%s realizou um ataque especial!\n", p1->nome);
+                	contadorAtaquesP1 = 0; // Resetar o contador
+            	} else {
+                	dano1 = p1->ataque - p2->defesa;
+            	}
+            	if (dano1 < 0) dano1 = 0;
+            	p2->vitalidade -= dano1;
+            	printf("%s atacou %s causando %d de dano!\n", p1->nome, p2->nome, dano1);
+            	break;
+
+        	case 2:
+            	printf("%s esta se defendendo!\n", p1->nome);
+            	defendendo = true;
+            	break;
+
+        	case 3:
+            	printf("\n--- Detalhes de %s ---\n", p1->nome);
+            	exibirPersonagem(p1);
+            	continue; // Reexibe o menu de ação
+            	break;
+
+        	default:
+            	printf("Acao invalida! Perdendo a vez.\n");
+            	break;
+    	}
+
+    	if (p2->vitalidade <= 0) {
+        	printf("%s venceu!\n", p1->nome);
+        	adicionarXP(p1, 50); // Premiar jogador com XP ao vencer
+        	adicionarXP(p2, -20); // Penalizar o oponente (opcional)
+        	break;
+    	}
+
+    	// Ação do oponente (simulação simples de ataque)
+    	printf("\nTurno de %s:\n", p2->nome);
+    	contadorAtaquesP2++;
+    	if (contadorAtaquesP2 == 2) {
+        	dano2 = (p2->ataque * 2) - p1->defesa; // Ataque especial
+        	printf("%s realizou um ataque especial!\n", p2->nome);
+        	contadorAtaquesP2 = 0; // Resetar o contador
+    	} else {
+        	dano2 = p2->ataque - p1->defesa;
+    	}
+    	if (defendendo) {
+        	dano2 /= 2; // Reduz o dano pela metade se estiver defendendo
+    	}
+    	if (dano2 < 0) dano2 = 0;
+    	p1->vitalidade -= dano2;
+    	printf("%s atacou %s causando %d de dano!\n", p2->nome, p1->nome, dano2);
+
+    	if (p1->vitalidade <= 0) {
+        	printf("%s venceu!\n", p2->nome);
+        	adicionarXP(p2, 50); // Premiar oponente com XP ao vencer
+        	adicionarXP(p1, -20); // Penalizar jogador por perder
+        	break;
+    	}
+
+    	// Mostrar o nível de vida dos personagens após cada ação
+    	printf("\nNivel de vida apos a rodada:\n");
+    	printf("%s: %d\n", p1->nome, p1->vitalidade);
+    	printf("%s: %d\n", p2->nome, p2->vitalidade);
+	}
+
+	// Exibir mensagem de que os dados foram salvos com sucesso
+	printf("\nProgresso salvo com sucesso! Seus dados foram atualizados.\n");
+}
+
+
 // Funcao principal
 int main() {
+
+	Personagem personagens[6]; // Array para personagens
+	int escolha, personagemEscolhido;
+	int numPersonagens = 5; 
+	Personagens(personagens);
+	printf("=== Bem-vindo ao Velho Oeste RPG! ===\n");
+
+	// Menu inicial
+	escolha = menuInicial();
+	switch (escolha) {
+    	case 1:
+        	// Menu de seleção de personagens
+        	escolha = menuPersonagem();
+        	if (escolha >= 1 && escolha <= 5) { 
+            	personagemEscolhido = escolha - 1;
+        	} else if (escolha == 6) {
+            	printf("\nCriando personagem adicional:\n");
+            	criarPersonagem(&personagens[numPersonagens]);
+            	personagemEscolhido = numPersonagens;
+            	numPersonagens++;
+        	} else {
+            	printf("Escolha inválida!\n");
+            	return 0;
+        	}
+
+        	// Menu principal
+        	do {
+            	printf("\n=== Menu Principal ===\n");
+            	printf("1. Modo Historia\n");
+            	printf("2. Modo Batalha\n");
+            	printf("3. Sair\n");
+            	printf("Escolha uma opcao: ");
+            	scanf("%d", &escolha);
+
+            	switch (escolha) {
+                	case 1:
+                    	modoHistoria(&personagens[personagemEscolhido]);
+                    	break;
+
+                	case 2:
+                    	// Escolher personagens para batalha
+                    	printf("\nEscolha os dois personagens para a batalha:\n");
+                    	for (int i = 0; i < numPersonagens; i++) {
+                        	printf("%d. %s (%s)\n", i + 1, personagens[i].nome, personagens[i].tipo);
+                    	}
+
+                    	int p1, p2;
+                    	printf("Escolha o personagem 1 (1-%d): ", numPersonagens);
+                    	scanf("%d", &p1);
+                    	printf("Escolha o personagem 2 (1-%d): ", numPersonagens);
+                    	scanf("%d", &p2);
+
+                    	if (p1 >= 1 && p1 <= numPersonagens && p2 >= 1 && p2 <= numPersonagens && p1 != p2) {
+                        	batalha(&personagens[p1 - 1], &personagens[p2 - 1]);
+                    	} else {
+                        	printf("Escolha invalida!\n");
+                    	}
+                    	break;
+
+                	case 3:
+                    	printf("Saindo do jogo...\n");
+                    	break;
+
+                	default:
+                    	printf("Opcao invalida!\n");
+            	}
+        	} while (escolha != 3);
+        	break;
+
+    	case 2:
+        	printf("Saindo do jogo...\n");
+        	break;
+
+    	default:
+        	printf("Opcao invalida!\n");
+	}
 
 
 	return 0;
